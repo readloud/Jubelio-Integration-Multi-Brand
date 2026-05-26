@@ -1,0 +1,13 @@
+[
+  {
+    "brand_id": "brand_a",
+    "brand_name": "Toko A",
+    "jubelio_order_id": "12345",
+    "order_number": "INV/2025/001",
+    "total_price": 250000.0,
+    "status": "completed",
+    "channel": "Tokopedia",
+    "created_at": "2025-06-01T10:00:00Z",
+    "raw_data": "{...}"
+  }
+]

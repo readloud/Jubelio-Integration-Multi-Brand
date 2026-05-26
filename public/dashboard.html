@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jubelio Integration Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <style>
+        .card-stats { transition: transform 0.2s; }
+        .card-stats:hover { transform: translateY(-5px); }
+        .status-success { color: #28a745; }
+        .status-failed { color: #dc3545; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-dark bg-dark">
+        <div class="container-fluid">
+            <span class="navbar-brand">Jubelio Integration Dashboard</span>
+            <div class="d-flex">
+                <span class="navbar-text" id="lastUpdate"></span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Stats Cards -->
+        <div class="row mb-4" id="statsCards"></div>
+
+        <!-- Charts -->
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Revenue Trend (30 Days)</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="revenueChart" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Sync Success Rate</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="syncChart" height="250"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sync Logs Table -->
+        <div class="card">
+            <div class="card-header">
+                <h5>Recent Sync Logs</h5>
+                <button class="btn btn-sm btn-primary" onclick="refreshData()">Refresh</button>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped" id="syncTable">
+                        <thead>
+                            <tr>
+                                <th>Brand</th>
+                                <th>Data Type</th>
+                                <th>Status</th>
+                                <th>Records</th>
+                                <th>Started At</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="syncTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let revenueChart, syncChart;
+
+        async function fetchData() {
+            try {
+                const [statsRes, revenueRes, syncRes] = await Promise.all([
+                    fetch('/api/stats/summary'),
+                    fetch('/api/stats/revenue?days=30'),
+                    fetch('/api/sync/status?limit=20')
+                ]);
+
+                const stats = await statsRes.json();
+                const revenue = await revenueRes.json();
+                const sync = await syncRes.json();
+
+                updateStatsCards(stats);
+                updateCharts(revenue, stats);
+                updateSyncTable(sync.logs);
+                
+                document.getElementById('lastUpdate').innerText = 
+                    `Last update: ${new Date().toLocaleString()}`;
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        }
+
+        function updateStatsCards(stats) {
+            const container = document.getElementById('statsCards');
+            container.innerHTML = '';
+            
+            stats.orders.forEach(brand => {
+                container.innerHTML += `
+                    <div class="col-md-4 mb-3">
+                        <div class="card card-stats">
+                            <div class="card-body">
+                                <h5 class="card-title">${brand.brand_id}</h5>
+                                <h3>${brand.total_orders.toLocaleString()}</h3>
+                                <small>Total Orders (30 days)</small>
+                                <h4 class="text-success mt-2">Rp ${brand.revenue.toLocaleString()}</h4>
+                                <small>Revenue</small>
+                                <span class="badge bg-info mt-2">${brand.channels} Channels</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function updateCharts(revenue, stats) {
+            const ctx = document.getElementById('revenueChart').getContext('2d');
+            if (revenueChart) revenueChart.destroy();
+            
+            revenueChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: revenue.data.map(d => d.date),
+                    datasets: [
+                        {
+                            label: 'Revenue (Rp)',
+                            data: revenue.data.map(d => d.revenue),
+                            borderColor: 'rgb(75, 192, 192)',
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Orders',
+                            data: revenue.data.map(d => d.orders),
+                            borderColor: 'rgb(255, 99, 132)',
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true
+                }
+            });
+
+            const syncCtx = document.getElementById('syncChart').getContext('2d');
+            if (syncChart) syncChart.destroy();
+            
+            syncChart = new Chart(syncCtx, {
+                type: 'pie',
+                data: {
+                    labels: stats.sync_success_rate.map(s => s.brand_id),
+                    datasets: [{
+                        data: stats.sync_success_rate.map(s => s.rate),
+                        backgroundColor: ['#ff6384', '#36a2eb', '#ffce56']
+                    }]
+                }
+            });
+        }
+
+        function updateSyncTable(logs) {
+            const tbody = document.getElementById('syncTableBody');
+            tbody.innerHTML = '';
+            
+            logs.forEach(log => {
+                const statusClass = log.status === 'success' ? 'status-success' : 'status-failed';
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${log.brand_id}</td>
+                        <td>${log.data_type}</td>
+                        <td class="${statusClass}">${log.status}</td>
+                        <td>${log.records_count}</td>
+                        <td>${new Date(log.started_at).toLocaleString()}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" 
+                                    onclick="triggerSync('${log.brand_id}')">
+                                Sync Now
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function triggerSync(brandId) {
+            await fetch(`/api/sync/trigger/${brandId}`, { method: 'POST' });
+            alert(`Sync triggered for ${brandId}`);
+            setTimeout(refreshData, 2000);
+        }
+
+        function refreshData() {
+            fetchData();
+        }
+
+        // Auto refresh every 30 seconds
+        setInterval(refreshData, 30000);
+        
+        // Initial load
+        refreshData();
+    </script>
+</body>
+</html>
