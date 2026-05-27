@@ -52,9 +52,11 @@ node index.js --sync-all
 
 #### Access:
 
-[*] Dashboard: http://localhost
-[*] API: http://localhost/api
-[*] Webhook: http://localhost/webhook/jubelio
+- [] Dashboard: http://localhost
+
+- [] API: http://localhost/api
+
+- [] Webhook: http://localhost/webhook/jubelio
 
 ## Testing Webhook:
 
