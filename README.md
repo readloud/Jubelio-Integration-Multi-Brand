@@ -2,7 +2,6 @@
 
 ## Complete Integration Solution for Jubelio API
 
-### Features
 - ✅ Multi-brand data classification
 - ✅ Automatic token management with refresh
 - ✅ PostgreSQL database for persistent storage
@@ -12,11 +11,26 @@
 - ✅ Docker support
 - ✅ Complete logging system
 
-### Quick Start
+### Quick Start Setup
+
+```bash
+# 1. Clone repository
+git clone https://github.com/readloud/jubelio-integration
+cd jubelio-integration
+
+# 2. Setup environment variables
+cp .env.example .env
+# Edit .env with your credentials
+```
 
 #### Using Docker
+
 ```bash
 docker-compose up -d
+```
+or
+```bash
+docker-compose -f docker-compose-full.yml up -d
 ```
 
 #### Python
@@ -30,22 +44,38 @@ python main.py --sync-all
 
 #### Node.js
 ```bash
-cd nodejs-version
 npm install
 cp .env.example .env
 # Edit .env with your credentials
 node index.js --sync-all
 ```
 
-### Commands
+#### Access:
 
-| Command | Description |
-|---------|-------------|
-| `python main.py --sync-all` | Sync all brands |
-| `python main.py --brand brand_a` | Sync specific brand |
-| `python main.py --schedule` | Run scheduler |
-| `node index.js --sync-all` | Sync all brands (Node.js) |
-| `node scheduler.js` | Run scheduler (Node.js) |
+[*] Dashboard: http://localhost
+[*] API: http://localhost/api
+[*] Webhook: http://localhost/webhook/jubelio
+
+## Testing Webhook:
+
+```bash
+# Test webhook locally
+curl -X POST http://localhost:3001/webhook/jubelio \
+  -H "Content-Type: application/json" \
+  -d '{
+    "event_type": "order.created",
+    "brand_id": "brand_a",
+    "data": {
+      "order_id": "TEST001",
+      "order_number": "ORD-2025-001",
+      "total_price": 500000,
+      "status": "pending",
+      "customer_name": "Test Customer"
+    }
+  }'
+```
+
+---
 
 ### Environment Variables
 
@@ -68,47 +98,6 @@ node index.js --sync-all
 1. **Token expired**: System auto-refreshes, check credentials
 2. **Database connection**: Verify PostgreSQL is running
 3. **Rate limiting**: Implemented exponential backoff
-
----
-
-## Setup:
-
-```bash
-# 1. Clone repository
-git clone <your-repo>
-cd jubelio-integration
-
-# 2. Setup environment variables
-cp .env.example .env
-# Edit .env with your credentials
-
-# 3. Run with Docker Compose
-docker-compose -f docker-compose-full.yml up -d
-
-# 4. Access:
-# Dashboard: http://localhost
-# API: http://localhost/api
-# Webhook: http://localhost/webhook/jubelio
-```
-
-## Testing Webhook:
-
-```bash
-# Test webhook locally
-curl -X POST http://localhost:3001/webhook/jubelio \
-  -H "Content-Type: application/json" \
-  -d '{
-    "event_type": "order.created",
-    "brand_id": "brand_a",
-    "data": {
-      "order_id": "TEST001",
-      "order_number": "ORD-2025-001",
-      "total_price": 500000,
-      "status": "pending",
-      "customer_name": "Test Customer"
-    }
-  }'
-```
 
 ---
 
