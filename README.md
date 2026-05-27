@@ -71,7 +71,7 @@ node index.js --sync-all
 
 ---
 
-## Cara Menjalankan Semua:
+## Setup:
 
 ```bash
 # 1. Clone repository
