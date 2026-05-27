@@ -1,6 +1,6 @@
-requests==2.31.0
+requests==2.33.0
 psycopg2-binary==2.9.9
-python-dotenv==1.0.0
+python-dotenv==1.2.2
 schedule==1.2.0
 python-dateutil==2.8.2
 requests-retry==1.0.1
